@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+        }
+        .main-container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .header {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 40px;
+        }
+        .header img {
+            width: 120px;
+            margin-bottom: 25px;
+            animation: pulse 2s infinite;
+        }
+        .chat-container {
+            min-height: 450px;
+            border: none;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            background: #ffffff;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #4299e1, #3182ce);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(66, 153, 225, 0.3);
+        }
+        .symptoms-input textarea {
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+        .symptoms-input textarea:focus {
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+        }
+        .message {
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .user-message {
+            background: #ebf8ff;
+            margin-left: 20%;
+            border-bottom-right-radius: 5px;
+        }
+        .bot-message {
+            background: #f7fafc;
+            margin-right: 20%;
+            border-bottom-left-radius: 5px;
+        }
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            color: #e53e3e;
+            font-weight: 500;
+            animation: pulse 1.5s infinite;
+        }
+        .recording-indicator.active {
+            display: flex;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .question-content {
+            flex: 1;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        .question-content:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .bot-avatar {
+            width: 40px;
+            height: 40px;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .follow-up-answer {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 8px;
+            transition: all 0.3s ease;
+        }
+        .follow-up-answer:focus {
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+        }
+        .language-selector select {
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+            padding: 8px 15px;
+            font-weight: 500;
+        }
+        #follow-up-section {
+            animation: slideInUp 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-container">
+            <div class="header">
+                <a href="/" style="text-decoration: none; color: inherit;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2966/2966327.png" alt="Healthcare Logo">
+                    <h2>Healthcare Chatbot</h2>
+                    <p class="text-muted">Your AI Health Assistant</p>
+                    <div class="header">
+                        <img src="/static/images/medical-bot.svg" alt="Healthcare Bot">
+                        <h1>Healthcare Chatbot</h1>
+                    </div>
+                </a>
+            </div>
+            
+            <!-- Authentication Status -->
+            <div class="auth-status text-end mb-3">
+                <a href="/" class="btn btn-outline-primary me-2">Home</a>
+                <div id="auth-buttons">
+                    <a href="/auth/login" class="btn btn-outline-primary me-2">Login</a>
+                    <a href="/auth/signup" class="btn btn-primary">Sign Up</a>
+                </div>
+                <div id="user-menu" style="display: none;">
+                    <a href="/auth/profile" class="btn btn-outline-primary me-2"><i class="fas fa-user"></i> My Profile</a>
+                    <button onclick="logout()" class="btn btn-outline-danger"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+                <script>
+                    // Check authentication status on page load
+                    fetch('/auth/check-auth')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.authenticated) {
+                                document.getElementById('auth-buttons').style.display = 'none';
+                                document.getElementById('user-menu').style.display = 'inline-block';
+                            } else {
+                                document.getElementById('auth-buttons').style.display = 'inline-block';
+                                document.getElementById('user-menu').style.display = 'none';
+                            }
+                        })
+                        .catch(error => console.error('Error checking auth status:', error));
+
+                    function logout() {
+                        fetch('/auth/logout')
+                            .then(response => response.json())
+                            .then(data => {
+                                window.location.href = '/';
+                            })
+                            .catch(error => console.error('Error logging out:', error));
+                    }
+                </script>
+            </div>
+
+            <!-- Main Chat Interface -->
+            <div class="chat-container">
+                <div id="question-page" class="mb-4">
+                    <div class="language-selector text-end">
+                        <select class="form-select form-select-sm d-inline-block w-auto" id="language-select">
+                            <option value="english">English</option>
+                            <option value="telugu">Telugu</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Chat Messages Container -->
+                    <div id="chat-messages" class="chat-messages mt-4">
+                        <div class="message bot-message" id="welcome-message"></div>
+                        <!-- Messages will be dynamically added here -->
+                    </div>
+
+                    <!-- Input Container -->
+                    <div class="input-container mt-3">
+                        <div class="input-group">
+                            <input type="text" id="symptom-input" class="form-control" placeholder="Describe your symptoms...">
+                            <button id="send-button" class="btn btn-primary">Send</button>
+                            <button id="voice-input-button" class="btn btn-secondary">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                        </div>
+                        <div id="recording-indicator" class="recording-indicator mt-2">
+                            <i class="fas fa-circle text-danger me-2"></i>
+                            Recording...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-font-awesome-kit.js"></script>
+    <script>
+        // Time-based greeting function
+        function getTimeBasedGreeting() {
+            const hour = new Date().getHours();
+            let greeting = '';
+            
+            if (hour >= 5 && hour < 12) {
+                greeting = {
+                    english: 'Good morning',
+                    telugu: 'శుభోదయం'
+                };
+            } else if (hour >= 12 && hour < 17) {
+                greeting = {
+                    english: 'Good afternoon',
+                    telugu: 'శుభ మధ్యాహ్నం'
+                };
+            } else {
+                greeting = {
+                    english: 'Good evening',
+                    telugu: 'శుభ సాయంత్రం'
+                };
+            }
+            return greeting;
+        }
+
+        // Initialize welcome message
+        function initializeWelcomeMessage() {
+            const welcomeMessage = document.getElementById('welcome-message');
+            const languageSelect = document.getElementById('language-select');
+            const greeting = getTimeBasedGreeting();
+            const selectedLanguage = languageSelect.value;
+            
+            const message = `${greeting[selectedLanguage]}! How can I help you today?`;
+            welcomeMessage.textContent = message;
+            
+            // Text to speech
+            if ('speechSynthesis' in window) {
+                const speech = new SpeechSynthesisUtterance(message);
+                speech.lang = selectedLanguage === 'english' ? 'en-US' : 'te-IN';
+                window.speechSynthesis.speak(speech);
+            }
+        }
+
+        // Language change handler
+        document.getElementById('language-select').addEventListener('change', initializeWelcomeMessage);
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeWelcomeMessage);
+
+        // Voice input handling
+        const voiceInputButton = document.getElementById('voice-input-button');
+        const recordingIndicator = document.getElementById('recording-indicator');
+        const symptomInput = document.getElementById('symptom-input');
+
+        if ('webkitSpeechRecognition' in window) {
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                recordingIndicator.classList.add('active');
+            };
+
+            recognition.onend = () => {
+                recordingIndicator.classList.remove('active');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                symptomInput.value = transcript;
+            };
+
+            voiceInputButton.addEventListener('click', () => {
+                recognition.lang = document.getElementById('language-select').value === 'english' ? 'en-US' : 'te-IN';
+                recognition.start();
+            });
+        } else {
+            voiceInputButton.style.display = 'none';
+        }
+
+        // Send button click handler
+        document.getElementById('send-button').addEventListener('click', sendSymptoms);
+        document.getElementById('symptom-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendSymptoms();
+            }
+        });
+
+        function sendSymptoms() {
+            const symptoms = document.getElementById('symptom-input').value.trim();
+            if (!symptoms) return;
+
+            // Add user message to chat
+            addMessageToChat('user', symptoms);
+            document.getElementById('symptom-input').value = '';
+
+            // Prepare request data
+            const data = {
+                symptoms: symptoms,
+                language: document.getElementById('language-select').value,
+                input_type: 'text',
+                is_follow_up: false,
+                format_type: 'detailed'
+            };
+
+            // Send request to server
+            fetch('/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        window.location.href = '/auth/login';
+                        throw new Error('Please login to continue.');
+                    }
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    addMessageToChat('bot', 'Error: ' + data.error);
+                    return;
+                }
+                
+                if (data.follow_up_questions) {
+                    addMessageToChat('bot', data.follow_up_questions);
+                } else if (data.summary_sheet) {
+                    addMessageToChat('bot', data.summary_sheet);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                addMessageToChat('bot', 'Error: ' + error.message);
+            });
+        }
+
+        let currentQuestionIndex = 0;
+        let followUpQuestions = [];
+        
+        function displayMessage(message, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser ? 'message user-message' : 'message bot-message';
+        
+            if (message.follow_up_questions) {
+                followUpQuestions = message.follow_up_questions;
+                displayNextQuestion();
+            } else if (message.summary_sheet) {
+                messageDiv.textContent = message.summary_sheet;
+                chatMessages.appendChild(messageDiv);
+            } else {
+                messageDiv.textContent = message;
+                chatMessages.appendChild(messageDiv);
+            }
+        
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function displayNextQuestion() {
+            if (currentQuestionIndex < followUpQuestions.length) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message bot-message';
+        
+                const questionContent = document.createElement('div');
+                questionContent.className = 'question-content';
+                const questionText = document.createElement('p');
+                questionText.textContent = followUpQuestions[currentQuestionIndex].question;
+                questionContent.appendChild(questionText);
+        
+                const answerInput = document.createElement('input');
+                answerInput.type = 'text';
+                answerInput.className = 'follow-up-answer';
+                answerInput.placeholder = 'Type your answer here...';
+        
+                const nextButton = document.createElement('button');
+                nextButton.textContent = currentQuestionIndex === followUpQuestions.length - 1 ? 'Submit' : 'Next';
+                nextButton.className = 'submit-button';
+                nextButton.onclick = handleNextQuestion;
+        
+                messageDiv.appendChild(questionContent);
+                messageDiv.appendChild(answerInput);
+                messageDiv.appendChild(nextButton);
+        
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                answerInput.focus();
+            }
+        }
+        
+        function handleNextQuestion() {
+            const currentAnswer = document.querySelector('.follow-up-answer').value;
+            if (!currentAnswer.trim()) {
+                alert('Please provide an answer before proceeding.');
+                return;
+            }
+        
+            const currentQuestion = followUpQuestions[currentQuestionIndex];
+            const answers = document.querySelectorAll('.follow-up-answer');
+            const answer = answers[answers.length - 1].value;
+        
+            if (currentQuestionIndex === followUpQuestions.length - 1) {
+                // This is the last question, submit all answers
+                submitFinalAnswers();
+            } else {
+                // Move to next question
+                currentQuestionIndex++;
+                displayNextQuestion();
+            }
+        }
+        
+        function submitFinalAnswers() {
+            const followUpAnswers = [];
+            const answers = document.querySelectorAll('.follow-up-answer');
+        
+            for (let i = 0; i < followUpQuestions.length; i++) {
+                followUpAnswers.push({
+                    question: followUpQuestions[i].question,
+                    answer: answers[i].value
+                });
+            }
+        
+            // Reset for next session
+            currentQuestionIndex = 0;
+            followUpQuestions = [];
+        
+            // Prepare request data
+            const data = {
+                is_follow_up: true,
+                follow_up_answers: followUpAnswers,
+                language: document.getElementById('language-select').value,
+                original_symptoms: document.querySelector('.user-message').textContent,
+                format_type: 'detailed'
+            };
+        
+            // Send follow-up answers to server
+            fetch('/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        window.location.href = '/auth/login';
+                        throw new Error('Please login to continue.');
+                    }
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayMessage(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                displayMessage('An error occurred while processing your answers. Please try again.');
+            });
+        }
+
+        function addMessageToChat(sender, message) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message animate__animated animate__fadeIn`;
+
+            if (Array.isArray(message)) {
+                // Handle follow-up questions array
+                message.forEach(question => {
+                    const questionDiv = document.createElement('div');
+                    questionDiv.className = 'mb-3';
+                    questionDiv.innerHTML = `
+                        <div class="d-flex align-items-start">
+                            <img src="${question.image}" alt="Bot" class="bot-avatar me-2">
+                            <div class="question-content animate__animated animate__${question.animation}">
+                                <p class="mb-2">${question.question}</p>
+                                <input type="text" class="form-control follow-up-answer" placeholder="Your answer...">
+                            </div>
+                        </div>
+                    `;
+                    messageDiv.appendChild(questionDiv);
+                });
+
+                // Add submit button for follow-up answers
+                const submitButton = document.createElement('button');
+                submitButton.className = 'btn btn-primary mt-3';
+                submitButton.textContent = 'Submit Answers';
+                submitButton.onclick = submitFollowUpAnswers;
+                messageDiv.appendChild(submitButton);
+            } else {
+                // Handle regular text messages
+                messageDiv.textContent = message;
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function submitFollowUpAnswers() {
+            const followUpAnswers = [];
+            const answerInputs = document.querySelectorAll('.follow-up-answer');
+            const questions = document.querySelectorAll('.question-content p');
+
+            questions.forEach((question, index) => {
+                followUpAnswers.push({
+                    question: question.textContent,
+                    answer: answerInputs[index].value
+                });
+            });
+
+            // Prepare request data
+            const data = {
+                is_follow_up: true,
+                follow_up_answers: followUpAnswers,
+                language: document.getElementById('language-select').value,
+                original_symptoms: document.querySelector('.user-message').textContent,
+                format_type: 'detailed'
+            };
+
+            // Send follow-up answers to server
+            fetch('/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        window.location.href = '/auth/login';
+                        throw new Error('Please login to continue.');
+                    }
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    addMessageToChat('bot', 'Error: ' + data.error);
+                    return;
+                }
+                if (data.summary_sheet) {
+                    addMessageToChat('bot', data.summary_sheet);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                addMessageToChat('bot', 'Error: ' + error.message);
+            });
+        }
+    </script>
+</body>
+</html>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</html>
+
+<script>
+    function changeLanguage() {
+        const language = document.getElementById('languageSelect').value;
+        fetch('/set_language', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `language=${language}`
+        })
+        .then(response => response.json())
+        .then(() => {
+            displayGreeting();
+        });
+    }
+
+    function displayGreeting() {
+        fetch('/get_greeting')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('greeting').textContent = data.text;
+            if (data.audio) {
+                const audio = new Audio(data.audio);
+                audio.play();
+            }
+        });
+    }
+
+    // Display greeting when page loads
+    document.addEventListener('DOMContentLoaded', displayGreeting);
+</script>
+</html>
